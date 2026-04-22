@@ -7,9 +7,7 @@ app = FastAPI(title="NLL Box Lacrosse Stats")
 
 @app.get("/api/players")
 def get_players():
-    """Get all players with their stats"""
     with Session(engine) as session:
-        # Join player profile with stats
         stmt = select(PlayerProfile, PlayerStats).join(
             PlayerStats, PlayerProfile.player_id == PlayerStats.player_id
         )
@@ -45,7 +43,6 @@ def get_players():
 
 @app.get("/api/players/{player_id}")
 def get_player_detail(player_id: int):
-    """Get detailed stats for a specific player"""
     with Session(engine) as session:
         profile = session.exec(
             select(PlayerProfile).where(PlayerProfile.player_id == player_id)

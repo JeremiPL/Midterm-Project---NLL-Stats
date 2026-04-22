@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Default team logo">
+  <rect width="120" height="120" rx="24" fill="#1a1a1a"/>
+  <circle cx="60" cy="60" r="40" fill="#c8102e"/>
+  <text x="60" y="67" font-family="Arial, sans-serif" font-size="26" text-anchor="middle" fill="#ffffff" font-weight="700">NLL</text>
+</svg>

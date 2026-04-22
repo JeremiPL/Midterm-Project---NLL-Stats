@@ -140,6 +140,15 @@ Returns comprehensive profile and statistics for a specific player.
 - Quick view of player name, number, position, and key stats
 - Goal/Assist/Points/Games Played summary
 - Click "View Details" for comprehensive statistics
+- Team-based card and modal colors are applied automatically
+- Team logos display when logo files are present in `static/team-logos/`
+
+### Team Logos (Optional)
+You can add official team logos for cards and modals.
+
+1. Place logo files in `static/team-logos/`
+2. Use the exact filenames listed in `static/team-logos/README.md`
+3. Missing files will automatically fall back to `static/team-logos/default-logo.svg`
 
 ### Detailed View Modal
 - Full player profile information

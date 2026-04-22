@@ -18,6 +18,65 @@ let allPlayers = [];
 let filteredPlayers = [];
 let activeFilter = 'all';
 
+// Team palettes: primary, secondary, accent and optional neutrals.
+const TEAM_COLOR_SCHEMES = {
+    'oshawa firewolves': ['#7A303F', '#D0B787', '#FFFFFF', '#000000'],
+    'buffalo bandits': ['#F58521', '#302C93', '#FFFFFF', '#A8AAAD', '#000000'],
+    'san diego seals': ['#000000', '#623295', '#B4B2B3', '#FBB426'],
+    'colorado mammoth': ['#98002E', '#B0B6BB', '#FFFFFF', '#000000'],
+    'georgia swarm': ['#FCB000', '#00204D', '#FFFFFF', '#A9ACAD'],
+    'vancouver warriors': ['#000000', '#B3A067', '#C2C2C2', '#FFFFFF'],
+    'calgary roughnecks': ['#C8102E', '#010101', '#A6BBC8'],
+    'toronto rock': ['#EF3E33', '#005A9C', '#FFCB05', '#CACCCE', '#FFFFFF', '#000000'],
+    'saskatchewan rush': ['#81C341', '#000000', '#FFFFFF'],
+    'las vegas desert dogs': ['#FFFFFF', '#000000'],
+    'philadelphia wings': ['#F8DC8D', '#FE0000', '#7B7C80', '#3F3F40'],
+    'halifax thunderbirds': ['#592D8B', '#F15922', '#401564', '#B34215'],
+    'rochester knighthawks': ['#4E5B31', '#010101', '#BD9B60', '#D0D0CE'],
+    'ottawa black bears': ['#DA1A32', '#000000', '#B79257', '#FFFFFF'],
+
+    // Alias to handle common alternate naming.
+    'albany firewolves': ['#7A303F', '#D0B787', '#FFFFFF', '#000000'],
+};
+
+const TEAM_ALIASES = {
+    buffalo: 'buffalo bandits',
+    sandiego: 'san diego seals',
+    colorado: 'colorado mammoth',
+    georgia: 'georgia swarm',
+    vancouver: 'vancouver warriors',
+    calgary: 'calgary roughnecks',
+    toronto: 'toronto rock',
+    saskatchewan: 'saskatchewan rush',
+    lasvegas: 'las vegas desert dogs',
+    philadelphia: 'philadelphia wings',
+    halifax: 'halifax thunderbirds',
+    rochester: 'rochester knighthawks',
+    ottawa: 'ottawa black bears',
+    oshawa: 'oshawa firewolves',
+    albany: 'albany firewolves'
+};
+
+const TEAM_LOGOS = {
+    'oshawa firewolves': 'Oshawa_FireWolves Logo.png',
+    'buffalo bandits': 'Buffalo_Bandits_logo.svg.png',
+    'san diego seals': 'San_Diego_Seals_primary_logo.png',
+    'colorado mammoth': 'Colorado mammoth logo.svg',
+    'georgia swarm': 'Georgia Swarm Logo.webp',
+    'vancouver warriors': 'Vancouver_Warriors_Logo.png',
+    'calgary roughnecks': 'Calgary_Roughnecks_logo.svg.png',
+    'toronto rock': 'Toronto_Rock_logo.svg.png',
+    'saskatchewan rush': 'Saskatchewan_Rush_logo.png',
+    'las vegas desert dogs': 'Las_Vegas_Desert_Dogs logo.png',
+    'philadelphia wings': 'Philadelphia_Wings logo.png',
+    'halifax thunderbirds': 'Halifax_Thunderbirds_logo.png',
+    'rochester knighthawks': 'Rochester_Knighthawks_logo.png',
+    'ottawa black bears': 'Ottawa Black Bears logo.png',
+    'albany firewolves': 'Oshawa_FireWolves Logo.png'
+};
+
+const DEFAULT_TEAM_LOGO = 'team-logos/default-logo.svg';
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     loadPlayers();
@@ -90,15 +149,31 @@ function createPlayerCard(player) {
     const card = document.createElement('div');
     card.className = 'player-card';
 
+    const teamColors = getTeamColors(player.team);
+    card.style.setProperty('--team-primary', teamColors.primary);
+    card.style.setProperty('--team-secondary', teamColors.secondary);
+    card.style.setProperty('--team-accent', teamColors.accent);
+    card.style.setProperty('--team-primary-contrast', getContrastColor(teamColors.primary));
+    card.style.setProperty('--team-secondary-contrast', getContrastColor(teamColors.secondary));
+    card.style.setProperty('--team-accent-contrast', getContrastColor(teamColors.accent));
+    card.style.setProperty('--team-tint', hexToRgba(teamColors.secondary, 0.08));
+    card.style.setProperty('--team-glow', hexToRgba(teamColors.accent, 0.16));
+
     const goalsEarned = player.goals || 0;
     const assistsEarned = player.assists || 0;
     const pointsTotal = player.points || 0;
+    const teamName = player.team || 'N/A';
+    const teamLogoPath = getTeamLogoPath(teamName);
+    card.style.setProperty('--team-logo-url', `url("${teamLogoPath}")`);
 
     card.innerHTML = `
+        <div class="card-team-logo-wrap">
+            <img class="team-logo-card" src="${teamLogoPath}" alt="${escapeHtml(teamName)} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+        </div>
         <div class="player-header">
             <div class="player-name">${escapeHtml(player.player_name || 'Unknown')}</div>
             <span class="player-position">${escapeHtml(getPositionLabel(player.position))}</span>
-            <div class="player-team">${escapeHtml(player.team || 'N/A')}</div>
+            <div class="player-team">${escapeHtml(teamName)}</div>
         </div>
         <div class="player-stats">
             <div class="stat-item">
@@ -140,6 +215,14 @@ async function viewPlayerDetails(playerId) {
         }
 
         const modalBody = document.getElementById('modalBody');
+        const modalTeamColors = getTeamColors(playerData.profile?.team);
+
+        modalBody.style.setProperty('--modal-primary', modalTeamColors.primary);
+        modalBody.style.setProperty('--modal-secondary', modalTeamColors.secondary);
+        modalBody.style.setProperty('--modal-accent', modalTeamColors.accent);
+        modalBody.style.setProperty('--modal-secondary-contrast', getContrastColor(modalTeamColors.secondary));
+        modalBody.style.setProperty('--modal-stat-bg', hexToRgba(modalTeamColors.secondary, 0.08));
+
         modalBody.innerHTML = createModalContent(playerData);
         playerModal.classList.add('show');
     } catch (error) {
@@ -152,10 +235,15 @@ async function viewPlayerDetails(playerId) {
 function createModalContent(playerData) {
     const profile = playerData.profile || {};
     const stats = playerData.stats || {};
+    const teamName = profile.team || 'N/A';
+    const teamLogoPath = getTeamLogoPath(teamName);
 
     if (!stats.games_played) {
         return `
             <div class="modal-header">
+                <div class="modal-team-brand">
+                    <img class="modal-team-logo" src="${teamLogoPath}" alt="${escapeHtml(teamName)} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+                </div>
                 <div class="modal-player-info">
                     <h2>${escapeHtml(profile.player_name || 'Unknown')}</h2>
                     ${profile.position ? `<span class="modal-position">${escapeHtml(profile.position)}</span>` : ''}
@@ -171,6 +259,9 @@ function createModalContent(playerData) {
 
     return `
         <div class="modal-header">
+            <div class="modal-team-brand">
+                <img class="modal-team-logo" src="${teamLogoPath}" alt="${escapeHtml(teamName)} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+            </div>
             <div class="modal-player-info">
                 <h2>${escapeHtml(profile.player_name || 'Unknown')}</h2>
                 ${profile.position ? `<span class="modal-position">${escapeHtml(getPositionLabel(profile.position))}</span>` : ''}
@@ -391,7 +482,9 @@ function resetFilters() {
 // Close modal
 function closeModal() {
     playerModal.classList.remove('show');
-    document.getElementById('modalBody').innerHTML = '';
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = '';
+    modalBody.removeAttribute('style');
 }
 
 // Show empty state
@@ -420,6 +513,106 @@ function getPositionLabel(position) {
         'GOALTENDER': 'Goaltender',
     };
     return positionMap[position.toUpperCase()] || position;
+}
+
+function getTeamColors(teamName) {
+    const fallback = {
+        primary: '#C8102E',
+        secondary: '#1A1A1A',
+        accent: '#FFC72C'
+    };
+
+    if (!teamName) return fallback;
+
+    const normalized = normalizeTeamName(teamName);
+    let colorSet = TEAM_COLOR_SCHEMES[normalized];
+
+    if (!colorSet && TEAM_ALIASES[normalized]) {
+        colorSet = TEAM_COLOR_SCHEMES[TEAM_ALIASES[normalized]];
+    }
+
+    if (!colorSet) {
+        const partialMatch = Object.keys(TEAM_ALIASES).find(alias => normalized.includes(alias));
+        if (partialMatch) {
+            colorSet = TEAM_COLOR_SCHEMES[TEAM_ALIASES[partialMatch]];
+        }
+    }
+
+    if (!colorSet) return fallback;
+
+    const basePrimary = colorSet[0] || fallback.primary;
+    const secondary = colorSet[1] || colorSet[0] || fallback.secondary;
+    const accent = colorSet[2] || colorSet[1] || colorSet[0] || fallback.accent;
+
+    return {
+        primary: isLightColor(basePrimary) ? secondary : basePrimary,
+        secondary,
+        accent,
+    };
+}
+
+function getTeamLogoPath(teamName) {
+    if (!teamName) return DEFAULT_TEAM_LOGO;
+
+    const normalized = normalizeTeamName(teamName);
+    let logoFile = TEAM_LOGOS[normalized];
+
+    if (!logoFile && TEAM_ALIASES[normalized]) {
+        logoFile = TEAM_LOGOS[TEAM_ALIASES[normalized]];
+    }
+
+    if (!logoFile) {
+        const partialMatch = Object.keys(TEAM_ALIASES).find(alias => normalized.includes(alias));
+        if (partialMatch) {
+            logoFile = TEAM_LOGOS[TEAM_ALIASES[partialMatch]];
+        }
+    }
+
+    return logoFile ? `team-logos/${encodeURIComponent(logoFile)}` : DEFAULT_TEAM_LOGO;
+}
+
+function normalizeTeamName(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function hexToRgba(hex, alpha) {
+    const cleaned = String(hex || '').replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) {
+        return `rgba(26, 26, 26, ${alpha})`;
+    }
+
+    const r = parseInt(cleaned.slice(0, 2), 16);
+    const g = parseInt(cleaned.slice(2, 4), 16);
+    const b = parseInt(cleaned.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getContrastColor(hex) {
+    const cleaned = String(hex || '').replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) return '#FFFFFF';
+
+    const r = parseInt(cleaned.slice(0, 2), 16);
+    const g = parseInt(cleaned.slice(2, 4), 16);
+    const b = parseInt(cleaned.slice(4, 6), 16);
+
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.6 ? '#111111' : '#FFFFFF';
+}
+
+function isLightColor(hex) {
+    const cleaned = String(hex || '').replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) return false;
+
+    const r = parseInt(cleaned.slice(0, 2), 16);
+    const g = parseInt(cleaned.slice(2, 4), 16);
+    const b = parseInt(cleaned.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    return luminance > 0.85;
 }
 
 // Helper: Escape HTML
