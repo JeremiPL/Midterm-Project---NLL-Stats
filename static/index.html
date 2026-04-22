@@ -10,8 +10,8 @@
     <header>
         <div class="header-content">
             <div class="logo-section">
-                <h1>🥍 NLL Box Lacrosse Stats</h1>
-                <p class="subtitle">National Lacrosse League Player Statistics</p>
+                <h1>NLL Statistics</h1>
+                <p class="subtitle">Player Statistics</p>
             </div>
         </div>
     </header>
@@ -29,18 +29,35 @@
                     <button id="searchBtn" class="search-btn">Search</button>
                     <button id="resetBtn" class="reset-btn">Reset</button>
                 </div>
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-filter="all">All Players</button>
-                    <button class="filter-btn" data-filter="position-forward">Forward</button>
-                    <button class="filter-btn" data-filter="position-transition">Transition</button>
-                    <button class="filter-btn" data-filter="position-defence">Defence</button>
-                    <button class="filter-btn" data-filter="position-goaltender">Goaltender</button>
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="teamFilter" class="filter-label">Team</label>
+                        <select id="teamFilter" class="filter-select">
+                            <option value="all">All Teams</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="seasonFilter" class="filter-label">Season</label>
+                        <select id="seasonFilter" class="filter-select">
+                            <option value="all">All Seasons</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="positionFilter" class="filter-label">Position</label>
+                        <select id="positionFilter" class="filter-select">
+                            <option value="all">All Positions</option>
+                            <option value="FORWARD">Forward</option>
+                            <option value="TRANSITION">Transition</option>
+                            <option value="DEFENCE">Defence</option>
+                            <option value="GOALTENDER">Goaltender</option>
+                        </select>
+                    </div>
                 </div>
             </section>
 
             <section class="stats-section">
                 <div class="stats-header">
-                    <h2>Player Statistics</h2>
+                    <h2>Player Profiles</h2>
                     <p class="player-count">
                         <span id="playerCount">0</span> players found
                     </p>
@@ -78,6 +95,6 @@
         <p>&copy; 2024 National Lacrosse League Stats Tracker | The Premier Indoor Lacrosse League</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260422-2"></script>
 </body>
 </html>

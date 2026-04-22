@@ -135,33 +135,49 @@ main {
     color: white;
 }
 
-/* Filter Buttons */
-.filter-buttons {
+/* Filter Controls */
+.filter-controls {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
 }
 
-.filter-btn {
-    padding: 0.6rem 1.2rem;
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 180px;
+    flex: 1;
+}
+
+.filter-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-light);
+    font-weight: 700;
+}
+
+.filter-select {
+    padding: 0.65rem 0.85rem;
     border: 2px solid var(--border-color);
     background: white;
-    border-radius: 20px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
     transition: all 0.3s ease;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    color: var(--text-color);
 }
 
-.filter-btn:hover {
+.filter-select:hover {
     border-color: var(--secondary-color);
-    color: var(--secondary-color);
 }
 
-.filter-btn.active {
-    background: var(--secondary-color);
-    color: white;
+.filter-select:focus {
+    outline: none;
     border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
 }
 
 /* Stats Section */
@@ -603,13 +619,12 @@ footer {
         margin-top: 1rem;
     }
 
-    .filter-buttons {
+    .filter-controls {
         flex-direction: column;
     }
 
-    .filter-btn {
-        width: 100%;
-        text-align: center;
+    .filter-group {
+        min-width: 100%;
     }
 
     .bio-grid, .stats-grid {

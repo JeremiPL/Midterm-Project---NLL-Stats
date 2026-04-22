@@ -8,15 +8,16 @@ const emptyState = document.getElementById('emptyState');
 const searchInput = document.getElementById('searchInput');
 const searchBtn = document.getElementById('searchBtn');
 const resetBtn = document.getElementById('resetBtn');
+const teamFilter = document.getElementById('teamFilter');
+const seasonFilter = document.getElementById('seasonFilter');
+const positionFilter = document.getElementById('positionFilter');
 const playerModal = document.getElementById('playerModal');
 const closeBtn = document.querySelector('.close');
 const playerCount = document.getElementById('playerCount');
-const filterButtons = document.querySelectorAll('.filter-btn');
 
 // State
 let allPlayers = [];
 let filteredPlayers = [];
-let activeFilter = 'all';
 
 // Team palettes: primary, secondary, accent and optional neutrals.
 const TEAM_COLOR_SCHEMES = {
@@ -83,10 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
     attachEventListeners();
 });
 
+const POSITION_SORT_METRICS = {
+    DEFENCE: 'caused_turnovers',
+    GOALTENDER: 'wins',
+};
+
 // Event Listeners
 function attachEventListeners() {
     searchBtn.addEventListener('click', performSearch);
     resetBtn.addEventListener('click', resetFilters);
+    teamFilter.addEventListener('change', applyFilters);
+    seasonFilter.addEventListener('change', applyFilters);
+    positionFilter.addEventListener('change', applyFilters);
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') performSearch();
     });
@@ -95,9 +104,6 @@ function attachEventListeners() {
         if (e.target === playerModal) closeModal();
     });
 
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', () => handleFilterClick(btn));
-    });
 }
 
 // Load all players from API
@@ -111,19 +117,31 @@ async function loadPlayers() {
         if (!response.ok) throw new Error('Failed to load players');
 
         allPlayers = await response.json();
-        filteredPlayers = [...allPlayers];
-
-        if (allPlayers.length === 0) {
-            showEmptyState();
-        } else {
-            displayPlayers(filteredPlayers);
-        }
+        setFilterOptions(allPlayers);
+        applyFilters();
     } catch (error) {
         console.error('Error loading players:', error);
         showErrorMessage('Failed to load player data. Please try again.');
     } finally {
         loadingSpinner.style.display = 'none';
     }
+}
+
+function setFilterOptions(players) {
+    const teams = [...new Set(players.map(player => player.team).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b));
+    const seasons = [...new Set(players.map(player => player.season).filter(Boolean))]
+        .sort((a, b) => b - a);
+
+    teamFilter.innerHTML = '<option value="all">All Teams</option>';
+    teams.forEach(team => {
+        teamFilter.innerHTML += `<option value="${escapeHtml(team)}">${escapeHtml(team)}</option>`;
+    });
+
+    seasonFilter.innerHTML = '<option value="all">All Seasons</option>';
+    seasons.forEach(season => {
+        seasonFilter.innerHTML += `<option value="${season}">${season}</option>`;
+    });
 }
 
 // Display players in grid
@@ -162,20 +180,36 @@ function createPlayerCard(player) {
     const goalsEarned = player.goals || 0;
     const assistsEarned = player.assists || 0;
     const pointsTotal = player.points || 0;
+    const isGoaltender = (player.position || '').toUpperCase() === 'GOALTENDER';
+    const gaaValue = typeof player.goals_against_average === 'number'
+        ? player.goals_against_average.toFixed(2)
+        : 'N/A';
+    const savePctValue = typeof player.save_percentage === 'number'
+        ? `${player.save_percentage.toFixed(1)}%`
+        : 'N/A';
+    const minutesPlayedValue = player.minutes_played || 'N/A';
     const teamName = player.team || 'N/A';
     const teamLogoPath = getTeamLogoPath(teamName);
     card.style.setProperty('--team-logo-url', `url("${teamLogoPath}")`);
 
-    card.innerHTML = `
-        <div class="card-team-logo-wrap">
-            <img class="team-logo-card" src="${teamLogoPath}" alt="${escapeHtml(teamName)} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
-        </div>
-        <div class="player-header">
-            <div class="player-name">${escapeHtml(player.player_name || 'Unknown')}</div>
-            <span class="player-position">${escapeHtml(getPositionLabel(player.position))}</span>
-            <div class="player-team">${escapeHtml(teamName)}</div>
-        </div>
-        <div class="player-stats">
+    const statsMarkup = isGoaltender ? `
+            <div class="stat-item">
+                <div class="stat-label">Wins</div>
+                <div class="stat-value">${player.wins || 0}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">GAA</div>
+                <div class="stat-value">${gaaValue}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Save %</div>
+                <div class="stat-value">${savePctValue}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Minutes Played</div>
+                <div class="stat-value">${minutesPlayedValue}</div>
+            </div>
+    ` : `
             <div class="stat-item">
                 <div class="stat-label">Goals</div>
                 <div class="stat-value">${goalsEarned}</div>
@@ -192,6 +226,19 @@ function createPlayerCard(player) {
                 <div class="stat-label">GP</div>
                 <div class="stat-value">${player.games_played || 0}</div>
             </div>
+    `;
+
+    card.innerHTML = `
+        <div class="card-team-logo-wrap">
+            <img class="team-logo-card" src="${teamLogoPath}" alt="${escapeHtml(teamName)} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+        </div>
+        <div class="player-header">
+            <div class="player-name">${escapeHtml(player.player_name || 'Unknown')}</div>
+            <span class="player-position">${escapeHtml(getPositionLabel(player.position))}</span>
+            <div class="player-team">${escapeHtml(teamName)}</div>
+        </div>
+        <div class="player-stats">
+            ${statsMarkup}
         </div>
         <button class="view-details-btn" onclick="viewPlayerDetails(${player.player_id})">
             View Details
@@ -427,56 +474,66 @@ function createModalContent(playerData) {
 
 // Search functionality
 function performSearch() {
-    const query = searchInput.value.toLowerCase().trim();
-
-    if (!query) {
-        filteredPlayers = [...allPlayers];
-    } else {
-        filteredPlayers = allPlayers.filter(player => {
-            return (
-                (player.player_name && player.player_name.toLowerCase().includes(query)) ||
-                (player.team && player.team.toLowerCase().includes(query)) ||
-                (player.position && player.position.toLowerCase().includes(query))
-            );
-        });
-    }
-
-    activeFilter = 'all';
-    filterButtons.forEach(btn => btn.classList.remove('active'));
-    filterButtons[0].classList.add('active');
-
-    displayPlayers(filteredPlayers);
+    applyFilters();
 }
 
-// Handle filter clicks
-function handleFilterClick(btn) {
-    filterButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+function sortPlayers(players, selectedPosition) {
+    const normalizedPosition = String(selectedPosition || 'all').toUpperCase();
+    const sortMetric = POSITION_SORT_METRICS[normalizedPosition] || 'points';
 
-    const filterType = btn.dataset.filter;
+    return [...players].sort((left, right) => {
+        const metricDifference = Number(right[sortMetric] || 0) - Number(left[sortMetric] || 0);
+        if (metricDifference !== 0) {
+            return metricDifference;
+        }
 
-    if (filterType === 'all') {
-        filteredPlayers = [...allPlayers];
-    } else {
-        const positionKey = filterType.replace('position-', '').toUpperCase();
-        filteredPlayers = allPlayers.filter(player => {
-            return player.position && player.position.toUpperCase().includes(positionKey);
-        });
-    }
+        const pointsDifference = Number(right.points || 0) - Number(left.points || 0);
+        if (pointsDifference !== 0) {
+            return pointsDifference;
+        }
 
-    activeFilter = filterType;
-    searchInput.value = '';
+        const gamesPlayedDifference = Number(right.games_played || 0) - Number(left.games_played || 0);
+        if (gamesPlayedDifference !== 0) {
+            return gamesPlayedDifference;
+        }
+
+        return (left.player_name || '').localeCompare(right.player_name || '');
+    });
+}
+
+function applyFilters() {
+    const query = searchInput.value.toLowerCase().trim();
+    const selectedTeam = teamFilter.value;
+    const selectedSeason = seasonFilter.value;
+    const selectedPosition = positionFilter.value;
+
+    filteredPlayers = allPlayers.filter(player => {
+        const matchesSearch = !query || (
+            (player.player_name && player.player_name.toLowerCase().includes(query)) ||
+            (player.team && player.team.toLowerCase().includes(query)) ||
+            (player.position && player.position.toLowerCase().includes(query))
+        );
+
+        const matchesTeam = selectedTeam === 'all' || player.team === selectedTeam;
+        const matchesSeason = selectedSeason === 'all' || String(player.season) === selectedSeason;
+        const matchesPosition = selectedPosition === 'all' ||
+            (player.position && player.position.toUpperCase() === selectedPosition);
+
+        return matchesSearch && matchesTeam && matchesSeason && matchesPosition;
+    });
+
+    filteredPlayers = sortPlayers(filteredPlayers, selectedPosition);
+
     displayPlayers(filteredPlayers);
 }
 
 // Reset filters
 function resetFilters() {
     searchInput.value = '';
-    activeFilter = 'all';
-    filteredPlayers = [...allPlayers];
-    filterButtons.forEach(b => b.classList.remove('active'));
-    filterButtons[0].classList.add('active');
-    displayPlayers(filteredPlayers);
+    teamFilter.value = 'all';
+    seasonFilter.value = 'all';
+    positionFilter.value = 'all';
+    applyFilters();
 }
 
 // Close modal

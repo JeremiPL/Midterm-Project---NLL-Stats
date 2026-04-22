@@ -20,6 +20,7 @@ def get_players():
                 "player_name": profile.player_name,
                 "team": profile.team,
                 "position": profile.position,
+                "season": stats.season,
                 "number": profile.number,
                 "goals": stats.goals,
                 "assists": stats.assists,
@@ -37,6 +38,10 @@ def get_players():
                 "faceoffs_won": stats.faceoffs_won,
                 "faceoffs_lost": stats.faceoffs_lost,
                 "faceoff_percentage": stats.faceoff_percentage,
+                "minutes_played": stats.minutes_played,
+                "goals_against_average": stats.goals_against_average,
+                "wins": stats.wins,
+                "save_percentage": stats.save_percentage,
             })
         
         return players
