@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, create_engine, select
-from models import PlayerProfile, PlayerStats, engine
+from models import PlayerProfile, PlayerStats, ScheduleGame, engine
 
 app = FastAPI(title="NLL Box Lacrosse Stats")
 
@@ -97,5 +97,58 @@ def get_player_detail(player_id: int):
                 "save_percentage": stats.save_percentage,
             }
         }
+
+
+@app.get("/api/schedule")
+def get_schedule(
+    season_id: str = "225",
+    stage: str = "REG",
+    week: str = "all",
+    team: str = "",
+):
+    with Session(engine) as session:
+        stmt = select(ScheduleGame).where(
+            ScheduleGame.season_id == season_id,
+            ScheduleGame.stage == stage,
+        )
+
+        if week != "all":
+            try:
+                stmt = stmt.where(ScheduleGame.week == int(week))
+            except ValueError:
+                return []
+
+        if team:
+            stmt = stmt.where(
+                (ScheduleGame.away_team_id == team) | (ScheduleGame.home_team_id == team)
+            )
+
+        games = session.exec(stmt).all()
+
+        games.sort(key=lambda game: (game.week or 999, game.date))
+
+        return [
+            {
+                "seasonId": game.season_id,
+                "stage": game.stage,
+                "week": str(game.week) if game.week is not None else "",
+                "date": game.date,
+                "awayTeam": game.away_team,
+                "homeTeam": game.home_team,
+                "awayScore": game.away_score,
+                "homeScore": game.home_score,
+                "result": game.final_score or (
+                    f"{game.away_score} - {game.home_score}"
+                    if game.away_score is not None and game.home_score is not None
+                    else "TBD"
+                ),
+                "status": game.status,
+                "venue": game.location,
+                "recapLink": game.recap_link,
+                "awayTeamId": game.away_team_id,
+                "homeTeamId": game.home_team_id,
+            }
+            for game in games
+        ]
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

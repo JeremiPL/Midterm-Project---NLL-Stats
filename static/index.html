@@ -9,85 +9,217 @@
 <body>
     <header>
         <div class="header-content">
-            <div class="logo-section">
-                <h1>NLL Statistics</h1>
-                <p class="subtitle">Player Statistics</p>
+            <div class="header-top">
+                <div class="logo-section">
+                    <h1>NLL Statistics</h1>
+                    <p class="subtitle">Player Statistics</p>
+                </div>
+                <div class="league-logo-wrap" aria-label="National Lacrosse League logo">
+                    <img
+                        src="team-logos/National_Lacrosse_League_Logo.png"
+                        alt="National Lacrosse League logo"
+                        class="league-logo"
+                        loading="eager"
+                    >
+                </div>
             </div>
+            <nav class="tab-nav" aria-label="Application sections">
+                <button class="tab-btn active" data-tab="player-profile" type="button">Player Profile</button>
+                <button class="tab-btn" data-tab="league-standing" type="button">League Standing</button>
+                <button class="tab-btn" data-tab="schedule" type="button">Schedule</button>
+                <button class="tab-btn" data-tab="advanced-statistics" type="button">Advanced Statistics</button>
+            </nav>
         </div>
     </header>
 
     <main>
         <div class="container">
-            <section class="search-section">
-                <div class="search-box">
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        placeholder="Search players by name, team, or position..." 
-                        class="search-input"
-                    >
-                    <button id="searchBtn" class="search-btn">Search</button>
-                    <button id="resetBtn" class="reset-btn">Reset</button>
-                </div>
-                <div class="filter-controls">
-                    <div class="filter-group">
-                        <label for="teamFilter" class="filter-label">Team</label>
-                        <select id="teamFilter" class="filter-select">
-                            <option value="all">All Teams</option>
-                        </select>
+            <section class="app-page active" data-page="player-profile">
+                <section class="search-section">
+                    <div class="search-box">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Search players by name, team, or position..." 
+                            class="search-input"
+                        >
+                        <button id="searchBtn" class="search-btn">Search</button>
+                        <button id="resetBtn" class="reset-btn">Reset</button>
                     </div>
-                    <div class="filter-group">
-                        <label for="seasonFilter" class="filter-label">Season</label>
-                        <select id="seasonFilter" class="filter-select">
-                            <option value="all">All Seasons</option>
-                        </select>
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label for="teamFilter" class="filter-label">Team</label>
+                            <select id="teamFilter" class="filter-select">
+                                <option value="all">All Teams</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="seasonFilter" class="filter-label">Season</label>
+                            <select id="seasonFilter" class="filter-select">
+                                <option value="all">All Seasons</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="positionFilter" class="filter-label">Position</label>
+                            <select id="positionFilter" class="filter-select">
+                                <option value="all">All Positions</option>
+                                <option value="FORWARD">Forward</option>
+                                <option value="TRANSITION">Transition</option>
+                                <option value="DEFENCE">Defence</option>
+                                <option value="GOALTENDER">Goaltender</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="filter-group">
-                        <label for="positionFilter" class="filter-label">Position</label>
-                        <select id="positionFilter" class="filter-select">
-                            <option value="all">All Positions</option>
-                            <option value="FORWARD">Forward</option>
-                            <option value="TRANSITION">Transition</option>
-                            <option value="DEFENCE">Defence</option>
-                            <option value="GOALTENDER">Goaltender</option>
-                        </select>
+                </section>
+
+                <section class="stats-section">
+                    <div class="stats-header">
+                        <h2>Player Profiles</h2>
+                        <p class="player-count">
+                            <span id="playerCount">0</span> players found
+                        </p>
+                    </div>
+
+                    <div id="loadingSpinner" class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading player data...</p>
+                    </div>
+
+                    <div id="playerGrid" class="player-grid">
+                        <!-- Players will be inserted here -->
+                    </div>
+
+                    <div id="emptyState" class="empty-state" style="display: none;">
+                        <div class="empty-icon">📊</div>
+                        <h3>No Players Found</h3>
+                        <p>Try adjusting your search criteria</p>
+                    </div>
+                </section>
+
+                <!-- Player Detail Modal -->
+                <div id="playerModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <div id="modalBody" class="modal-body">
+                            <!-- Detailed player info will be inserted here -->
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section class="stats-section">
-                <div class="stats-header">
-                    <h2>Player Profiles</h2>
-                    <p class="player-count">
-                        <span id="playerCount">0</span> players found
-                    </p>
-                </div>
-
-                <div id="loadingSpinner" class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading player data...</p>
-                </div>
-
-                <div id="playerGrid" class="player-grid">
-                    <!-- Players will be inserted here -->
-                </div>
-
-                <div id="emptyState" class="empty-state" style="display: none;">
-                    <div class="empty-icon">📊</div>
-                    <h3>No Players Found</h3>
-                    <p>Try adjusting your search criteria</p>
-                </div>
+            <section class="app-page" data-page="league-standing">
+                <section class="placeholder-section">
+                    <h2>League Standing</h2>
+                    <p>This tab is ready on the frontend. Add backend standings data when you are ready.</p>
+                </section>
             </section>
 
-            <!-- Player Detail Modal -->
-            <div id="playerModal" class="modal">
-                <div class="modal-content">
-                    <span class="close">&times;</span>
-                    <div id="modalBody" class="modal-body">
-                        <!-- Detailed player info will be inserted here -->
+            <section class="app-page" data-page="schedule">
+                <section class="placeholder-section schedule-section">
+                    <h2>Schedule</h2>
+                    <p>Browse game results and recaps.</p>
+
+                    <div class="schedule-controls">
+                        <div class="filter-group">
+                            <label for="scheduleSeasonFilter" class="filter-label">Season</label>
+                            <select id="scheduleSeasonFilter" class="filter-select">
+                                <option value="225">2025-26</option>
+                                <option value="224">2024-25</option>
+                                <option value="223">2023-24</option>
+                                <option value="222">2022-23</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="scheduleStageFilter" class="filter-label">Stage</label>
+                            <select id="scheduleStageFilter" class="filter-select">
+                                <option value="REG">Regular Season</option>
+                                <option value="PO">Playoffs</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="scheduleWeekFilter" class="filter-label">Week</label>
+                            <select id="scheduleWeekFilter" class="filter-select">
+                                <option value="all">All Weeks</option>
+                                <option value="1">Week 1</option>
+                                <option value="2">Week 2</option>
+                                <option value="3">Week 3</option>
+                                <option value="4">Week 4</option>
+                                <option value="5">Week 5</option>
+                                <option value="6">Week 6</option>
+                                <option value="7">Week 7</option>
+                                <option value="8">Week 8</option>
+                                <option value="9">Week 9</option>
+                                <option value="10">Week 10</option>
+                                <option value="11">Week 11</option>
+                                <option value="12">Week 12</option>
+                                <option value="13">Week 13</option>
+                                <option value="14">Week 14</option>
+                                <option value="15">Week 15</option>
+                                <option value="16">Week 16</option>
+                                <option value="17">Week 17</option>
+                                <option value="18">Week 18</option>
+                                <option value="19">Week 19</option>
+                                <option value="20">Week 20</option>
+                                <option value="21">Week 21</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="scheduleTeamFilter" class="filter-label">Team</label>
+                            <select id="scheduleTeamFilter" class="filter-select">
+                                <option value="">All Teams</option>
+                                <option value="509">Buffalo Bandits</option>
+                                <option value="524">Calgary Roughnecks</option>
+                                <option value="525">Colorado Mammoth</option>
+                                <option value="539">Georgia Swarm</option>
+                                <option value="544">Halifax Thunderbirds</option>
+                                <option value="549">Las Vegas Desert Dogs</option>
+                                <option value="548">Oshawa FireWolves</option>
+                                <option value="545">Ottawa Black Bears</option>
+                                <option value="541">Philadelphia Wings</option>
+                                <option value="546">Rochester Knighthawks</option>
+                                <option value="542">San Diego Seals</option>
+                                <option value="540">Saskatchewan Rush</option>
+                                <option value="515">Toronto Rock</option>
+                                <option value="543">Vancouver Warriors</option>
+                            </select>
+                        </div>
+                        <button id="scheduleRefreshBtn" class="search-btn schedule-refresh-btn" type="button">Submit</button>
                     </div>
-                </div>
-            </div>
+
+                    <div id="scheduleLoading" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Loading schedule...</p>
+                    </div>
+
+                    <div class="schedule-table-wrap">
+                        <table class="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Away Team</th>
+                                    <th>Home Team</th>
+                                    <th>Result</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                    <th>Recap</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody">
+                                <tr>
+                                    <td colspan="7" class="schedule-empty">No schedule loaded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <section class="app-page" data-page="advanced-statistics">
+                <section class="placeholder-section">
+                    <h2>Advanced Statistics</h2>
+                    <p>This tab is ready on the frontend. Add backend advanced stats data when you are ready.</p>
+                </section>
+            </section>
         </div>
     </main>
 

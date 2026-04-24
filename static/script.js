@@ -14,10 +14,20 @@ const positionFilter = document.getElementById('positionFilter');
 const playerModal = document.getElementById('playerModal');
 const closeBtn = document.querySelector('.close');
 const playerCount = document.getElementById('playerCount');
+const tabButtons = document.querySelectorAll('.tab-btn');
+const appPages = document.querySelectorAll('.app-page');
+const scheduleSeasonFilter = document.getElementById('scheduleSeasonFilter');
+const scheduleStageFilter = document.getElementById('scheduleStageFilter');
+const scheduleWeekFilter = document.getElementById('scheduleWeekFilter');
+const scheduleTeamFilter = document.getElementById('scheduleTeamFilter');
+const scheduleRefreshBtn = document.getElementById('scheduleRefreshBtn');
+const scheduleTableBody = document.getElementById('scheduleTableBody');
+const scheduleLoading = document.getElementById('scheduleLoading');
 
 // State
 let allPlayers = [];
 let filteredPlayers = [];
+let scheduleLoaded = false;
 
 // Team palettes: primary, secondary, accent and optional neutrals.
 const TEAM_COLOR_SCHEMES = {
@@ -80,6 +90,7 @@ const DEFAULT_TEAM_LOGO = 'team-logos/default-logo.svg';
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    initTabs();
     loadPlayers();
     attachEventListeners();
 });
@@ -103,7 +114,120 @@ function attachEventListeners() {
     window.addEventListener('click', (e) => {
         if (e.target === playerModal) closeModal();
     });
+    window.addEventListener('hashchange', () => {
+        activateTab(getTabFromHash(), false);
+    });
 
+    if (scheduleRefreshBtn) {
+        scheduleRefreshBtn.addEventListener('click', loadSchedule);
+    }
+
+}
+
+function initTabs() {
+    tabButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            activateTab(button.dataset.tab || 'player-profile', true);
+        });
+    });
+
+    activateTab(getTabFromHash(), false);
+}
+
+function getTabFromHash() {
+    const hashValue = window.location.hash.replace('#', '').trim();
+    const validTabs = ['player-profile', 'league-standing', 'schedule', 'advanced-statistics'];
+    return validTabs.includes(hashValue) ? hashValue : 'player-profile';
+}
+
+function activateTab(tabName, updateHash) {
+    tabButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.tab === tabName);
+    });
+
+    appPages.forEach((page) => {
+        page.classList.toggle('active', page.dataset.page === tabName);
+    });
+
+    if (updateHash) {
+        window.location.hash = tabName;
+    }
+
+    if (tabName === 'schedule' && !scheduleLoaded) {
+        loadSchedule();
+    }
+}
+
+async function loadSchedule() {
+    if (!scheduleTableBody || !scheduleLoading) return;
+
+    const seasonId = scheduleSeasonFilter ? scheduleSeasonFilter.value : '225';
+    const stage = scheduleStageFilter ? scheduleStageFilter.value : 'REG';
+    const week = scheduleWeekFilter ? scheduleWeekFilter.value : 'all';
+    const team = scheduleTeamFilter ? scheduleTeamFilter.value : '';
+
+    try {
+        scheduleLoading.style.display = 'block';
+        renderScheduleEmpty('Loading schedule...');
+
+        const params = new URLSearchParams({
+            season_id: seasonId,
+            stage,
+            week,
+            team,
+        });
+
+        const response = await fetch(`${API_BASE}/schedule?${params.toString()}`);
+        if (!response.ok) {
+            throw new Error('Failed to load schedule data');
+        }
+
+        const rows = await response.json();
+        renderScheduleRows(rows);
+        scheduleLoaded = true;
+    } catch (error) {
+        console.error('Error loading schedule:', error);
+        renderScheduleEmpty('Unable to load schedule data right now.');
+    } finally {
+        scheduleLoading.style.display = 'none';
+    }
+}
+
+function renderScheduleRows(rows) {
+    if (!scheduleTableBody) return;
+
+    if (!rows.length) {
+        renderScheduleEmpty('No games found for the selected filters.');
+        return;
+    }
+
+    scheduleTableBody.innerHTML = rows.map((game) => {
+        const recapCell = game.recapLink
+            ? `<a class="schedule-recap-link" href="${escapeHtml(game.recapLink)}" target="_blank" rel="noopener noreferrer">View</a>`
+            : 'N/A';
+
+        return `
+            <tr>
+                <td>${escapeHtml(game.date)}</td>
+                <td>${escapeHtml(game.awayTeam)}</td>
+                <td>${escapeHtml(game.homeTeam)}</td>
+                <td>${escapeHtml(game.result)}</td>
+                <td>${escapeHtml(game.venue)}</td>
+                <td>${escapeHtml(game.status)}</td>
+                <td>${recapCell}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderScheduleEmpty(message) {
+    if (!scheduleTableBody) return;
+
+    scheduleTableBody.innerHTML = `
+        <tr>
+            <td colspan="7" class="schedule-empty">${escapeHtml(message)}</td>
+        </tr>
+    `;
 }
 
 // Load all players from API
