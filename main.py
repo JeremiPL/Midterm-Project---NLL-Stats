@@ -3,6 +3,44 @@ from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, create_engine, select
 from models import PlayerProfile, PlayerStats, ScheduleGame, engine
 
+
+TEAM_LOGOS = {
+    "oshawa firewolves": "Oshawa_FireWolves Logo.png",
+    "buffalo bandits": "Buffalo_Bandits_logo.svg.png",
+    "san diego seals": "San_Diego_Seals_primary_logo.png",
+    "colorado mammoth": "Colorado mammoth logo.svg",
+    "georgia swarm": "Georgia Swarm Logo.webp",
+    "vancouver warriors": "Vancouver_Warriors_Logo.png",
+    "calgary roughnecks": "Calgary_Roughnecks_logo.svg.png",
+    "toronto rock": "Toronto_Rock_logo.svg.png",
+    "saskatchewan rush": "Saskatchewan_Rush_logo.png",
+    "las vegas desert dogs": "Las_Vegas_Desert_Dogs logo.png",
+    "philadelphia wings": "Philadelphia_Wings logo.png",
+    "halifax thunderbirds": "Halifax_Thunderbirds_logo.png",
+    "rochester knighthawks": "Rochester_Knighthawks_logo.png",
+    "ottawa black bears": "Ottawa Black Bears logo.png",
+    "albany firewolves": "Oshawa_FireWolves Logo.png",
+}
+
+DEFAULT_TEAM_LOGO = "team-logos/default-logo.svg"
+
+SEASON_225_REG_ORDER = [
+    "Vancouver Warriors",
+    "Colorado Mammoth",
+    "Saskatchewan Rush",
+    "Georgia Swarm",
+    "Buffalo Bandits",
+    "Toronto Rock",
+    "San Diego Seals",
+    "Halifax Thunderbirds",
+    "Las Vegas Desert Dogs",
+    "Ottawa Black Bears",
+    "Calgary Roughnecks",
+    "Rochester Knighthawks",
+    "Oshawa FireWolves",
+    "Philadelphia Wings",
+]
+
 app = FastAPI(title="NLL Box Lacrosse Stats")
 
 @app.get("/api/players")
@@ -150,5 +188,98 @@ def get_schedule(
             }
             for game in games
         ]
+
+
+@app.get("/api/standings")
+def get_standings(
+    season_id: str = "225",
+    stage: str = "REG",
+):
+    with Session(engine) as session:
+        games = session.exec(
+            select(ScheduleGame).where(
+                ScheduleGame.season_id == season_id,
+                ScheduleGame.stage == stage,
+            )
+        ).all()
+
+    standings = {}
+
+    for game in games:
+        away_team = game.away_team
+        home_team = game.home_team
+
+        if not away_team or not home_team:
+            continue
+
+        if away_team not in standings:
+            away_logo = TEAM_LOGOS.get(away_team.lower())
+            standings[away_team] = {
+                "teamId": game.away_team_id,
+                "team": away_team,
+                "logo": f"team-logos/{away_logo}" if away_logo else DEFAULT_TEAM_LOGO,
+                "wins": 0,
+                "losses": 0,
+                "gamesPlayed": 0,
+            }
+
+        if home_team not in standings:
+            home_logo = TEAM_LOGOS.get(home_team.lower())
+            standings[home_team] = {
+                "teamId": game.home_team_id,
+                "team": home_team,
+                "logo": f"team-logos/{home_logo}" if home_logo else DEFAULT_TEAM_LOGO,
+                "wins": 0,
+                "losses": 0,
+                "gamesPlayed": 0,
+            }
+
+        if not standings[away_team]["teamId"] and game.away_team_id:
+            standings[away_team]["teamId"] = game.away_team_id
+        if not standings[home_team]["teamId"] and game.home_team_id:
+            standings[home_team]["teamId"] = game.home_team_id
+
+        # Standings count only games that have final scores.
+        if game.away_score is None or game.home_score is None:
+            continue
+
+        away = standings[away_team]
+        home = standings[home_team]
+
+        away["gamesPlayed"] += 1
+        home["gamesPlayed"] += 1
+
+        if game.away_score > game.home_score:
+            away["wins"] += 1
+            home["losses"] += 1
+        elif game.home_score > game.away_score:
+            home["wins"] += 1
+            away["losses"] += 1
+
+    rows = []
+    for row in standings.values():
+        row["record"] = f"{row['wins']}-{row['losses']}"
+        rows.append(row)
+
+    if season_id == "225" and stage == "REG":
+        order_map = {team_name: index for index, team_name in enumerate(SEASON_225_REG_ORDER)}
+        rows.sort(key=lambda row: order_map.get(row["team"], len(SEASON_225_REG_ORDER)))
+    else:
+        rows.sort(
+            key=lambda row: (
+                -row["wins"],
+                row["losses"],
+                row["team"],
+            )
+        )
+
+    for index, row in enumerate(rows, start=1):
+        row["rank"] = index
+
+    return {
+        "seasonId": season_id,
+        "stage": stage,
+        "standings": rows,
+    }
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

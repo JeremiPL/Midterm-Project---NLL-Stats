@@ -108,9 +108,65 @@
             </section>
 
             <section class="app-page" data-page="league-standing">
-                <section class="placeholder-section">
-                    <h2>League Standing</h2>
-                    <p>This tab is ready on the frontend. Add backend standings data when you are ready.</p>
+                <section class="standings-section">
+                    <div class="standings-header">
+                        <div>
+                            <h2>League Standing</h2>
+                            <p>Live rankings using completed game results.</p>
+                        </div>
+                        <div class="standings-pill" id="standingsCount">0 Teams</div>
+                    </div>
+
+                    <div class="standings-controls">
+                        <div class="filter-group">
+                            <label for="standingSeasonFilter" class="filter-label">Season</label>
+                            <select id="standingSeasonFilter" class="filter-select">
+                                <option value="225">2025-26</option>
+                                <option value="224">2024-25</option>
+                                <option value="223">2023-24</option>
+                                <option value="222">2022-23</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="standingStageFilter" class="filter-label">Stage</label>
+                            <select id="standingStageFilter" class="filter-select">
+                                <option value="REG">Regular Season</option>
+                                <option value="PO">Playoffs</option>
+                            </select>
+                        </div>
+                        <button id="standingsRefreshBtn" class="search-btn standings-refresh-btn" type="button">Update Standings</button>
+                    </div>
+
+                    <div id="standingsLoading" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Loading standings...</p>
+                    </div>
+
+                    <div class="standings-table-wrap">
+                        <table class="standings-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Team</th>
+                                    <th>Record</th>
+                                    <th>GP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="standingsTableBody">
+                                <tr>
+                                    <td colspan="4" class="standings-empty">No standings loaded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="standingsCards" class="standings-cards" aria-live="polite"></div>
+
+                    <section id="playoffBracket" class="playoff-bracket" style="display: none;" aria-live="polite">
+                        <h3>Playoff Bracket</h3>
+                        <p>Top 8 seeds qualify. Quarterfinal matchups follow 1v8, 2v7, 3v6, and 4v5.</p>
+                        <div id="playoffBracketGrid" class="playoff-bracket-grid"></div>
+                    </section>
                 </section>
             </section>
 

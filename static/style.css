@@ -263,6 +263,440 @@ main {
     font-weight: 600;
 }
 
+/* Standings Section */
+.standings-section {
+    background:
+        radial-gradient(circle at 86% 16%, rgba(217, 121, 36, 0.14) 0, rgba(217, 121, 36, 0) 42%),
+        radial-gradient(circle at 8% 95%, rgba(118, 185, 71, 0.12) 0, rgba(118, 185, 71, 0) 45%),
+        var(--surface-color);
+    border-radius: 14px;
+    padding: 2rem;
+    box-shadow: 0 8px 24px rgba(22, 50, 79, 0.09);
+    border-top: 4px solid var(--secondary-color);
+}
+
+.standings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.standings-header h2 {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    margin-bottom: 0.3rem;
+}
+
+.standings-header p {
+    color: var(--text-light);
+}
+
+.standings-pill {
+    background: linear-gradient(135deg, #f9b25d 0%, var(--secondary-color) 100%);
+    color: #10273d;
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.standings-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 1rem;
+}
+
+.standings-refresh-btn {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+}
+
+.standings-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.standings-table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+}
+
+.standings-table th,
+.standings-table td {
+    padding: 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid #e7e2d6;
+    font-size: 0.93rem;
+}
+
+.standings-table th {
+    background: #f7f2e6;
+    color: var(--primary-color);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.standings-table tr:hover td {
+    background: #fcf8ee;
+}
+
+.standings-cutoff-row td {
+    border-bottom: none;
+    background: transparent;
+    padding: 0.2rem 0.6rem 0.55rem;
+}
+
+.standings-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #21476b 0%, var(--header-dark) 100%);
+    color: white;
+    font-weight: 700;
+}
+
+.standings-team-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.standings-cutoff-line {
+    position: relative;
+    border-top: 6px solid #f3c63a;
+}
+
+.playoff-cutoff-tag {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #f6d56f 0%, #f3c63a 100%);
+    color: #5e4311;
+    border: 1px solid #d9aa1a;
+    border-radius: 999px;
+    padding: 0.14rem 0.68rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.standings-team-logo-wrap {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 2px solid #e7dfcf;
+    padding: 0.22rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.standings-team-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.standings-team-name {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.standings-record {
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+
+.standings-empty {
+    text-align: center;
+    color: var(--text-light);
+    padding: 1.2rem;
+}
+
+.standings-cards {
+    display: none;
+    gap: 0.9rem;
+    margin-top: 1rem;
+}
+
+.standing-card {
+    background:
+        radial-gradient(circle at 90% 10%, rgba(118, 185, 71, 0.14) 0, rgba(118, 185, 71, 0) 40%),
+        #ffffff;
+    border: 1px solid #e8e2d5;
+    border-radius: 12px;
+    padding: 0.95rem;
+    box-shadow: 0 6px 18px rgba(22, 50, 79, 0.08);
+}
+
+.playoff-cutoff-tag-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f6d56f 0%, #f3c63a 100%);
+    color: #5e4311;
+    border: 1px solid #d9aa1a;
+    border-radius: 999px;
+    padding: 0.12rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.standings-cutoff-card-divider {
+    position: relative;
+    margin: 0.1rem 0 0.15rem;
+    border-top: 6px solid #f3c63a;
+    text-align: center;
+}
+
+.standings-cutoff-card-divider .playoff-cutoff-tag-card {
+    transform: translateY(-58%);
+}
+
+.standing-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+}
+
+.standing-rank {
+    font-family: 'Teko', 'Barlow', sans-serif;
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.standing-card-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 2px solid #ece4d4;
+    padding: 0.2rem;
+    object-fit: contain;
+}
+
+.standing-team-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.55rem;
+}
+
+.standing-record-row {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    padding-top: 0.28rem;
+}
+
+.standing-record-row strong {
+    color: var(--secondary-color);
+}
+
+.playoff-bracket {
+    margin-top: 1.4rem;
+    padding-top: 1.2rem;
+    border-top: 2px dashed rgba(22, 50, 79, 0.25);
+}
+
+.playoff-bracket h3 {
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.playoff-bracket p {
+    color: var(--text-light);
+    margin-bottom: 0.8rem;
+}
+
+.playoff-bracket-grid {
+    --bracket-gap: 0.8rem;
+    --matchup-height: 196px;
+    --pair-height: calc(var(--matchup-height) * 2 + var(--bracket-gap));
+    display: grid;
+    grid-template-columns: 1.3fr 1.2fr 1fr;
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.playoff-round {
+    display: grid;
+    gap: var(--bracket-gap);
+    position: relative;
+}
+
+.playoff-round-quarterfinals {
+    grid-template-rows: auto repeat(4, var(--matchup-height));
+}
+
+.playoff-round-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.55px;
+    text-transform: uppercase;
+    color: var(--text-light);
+}
+
+.playoff-round-quarterfinals .playoff-matchup-card:nth-child(2) {
+    grid-row: 2;
+}
+
+.playoff-round-quarterfinals .playoff-matchup-card:nth-child(3) {
+    grid-row: 3;
+}
+
+.playoff-round-quarterfinals .playoff-matchup-card:nth-child(4) {
+    grid-row: 4;
+}
+
+.playoff-round-quarterfinals .playoff-matchup-card:nth-child(5) {
+    grid-row: 5;
+}
+
+.playoff-round-semifinals {
+    grid-template-rows: auto var(--pair-height) var(--pair-height);
+}
+
+.playoff-round-semifinals .playoff-matchup-card:nth-child(2) {
+    grid-row: 2;
+    align-self: center;
+}
+
+.playoff-round-semifinals .playoff-matchup-card:nth-child(3) {
+    grid-row: 3;
+    align-self: center;
+}
+
+.playoff-round-final {
+    grid-template-rows: auto calc(var(--pair-height) * 2 + var(--bracket-gap));
+}
+
+.playoff-round-final .playoff-matchup-card:nth-child(2) {
+    grid-row: 2;
+    align-self: center;
+}
+
+.playoff-matchup-card {
+    background: linear-gradient(140deg, #ffffff 0%, #f8f3e8 100%);
+    border: 1px solid #e7dfcf;
+    border-left: 4px solid var(--secondary-color);
+    border-radius: 12px;
+    padding: 0.85rem;
+    box-shadow: 0 6px 18px rgba(22, 50, 79, 0.08);
+    min-height: var(--matchup-height);
+}
+
+.playoff-matchup-card h4 {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-bottom: 0.2rem;
+}
+
+.playoff-series-format {
+    display: inline-block;
+    margin-bottom: 0.55rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(22, 50, 79, 0.24);
+    background: rgba(22, 50, 79, 0.06);
+    color: var(--primary-color);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
+    font-weight: 700;
+}
+
+.playoff-matchup-placeholder {
+    border-left-color: #7c8b98;
+}
+
+.playoff-matchup-final {
+    border-left-color: var(--accent-color);
+}
+
+.playoff-seed-row {
+    display: grid;
+    grid-template-columns: 36px 36px 1fr auto;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.playoff-seed-number {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.playoff-seed-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: white;
+    border: 2px solid #e7dfcf;
+    padding: 0.18rem;
+    object-fit: contain;
+}
+
+.playoff-seed-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.playoff-seed-record {
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+
+.playoff-seed-row-placeholder .playoff-seed-name {
+    color: var(--text-light);
+}
+
+.playoff-home-tag {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #194d21;
+    background: #d8f1dc;
+    border: 1px solid #7fc38a;
+    border-radius: 999px;
+    padding: 0.04rem 0.35rem;
+    vertical-align: middle;
+}
+
+.playoff-vs {
+    text-align: center;
+    font-weight: 700;
+    color: var(--text-light);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    margin: 0.35rem 0;
+}
+
 /* Search Section */
 .search-section {
     background:
@@ -858,6 +1292,42 @@ footer::before {
         min-width: 100%;
     }
 
+    .standings-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .standings-table-wrap {
+        display: none;
+    }
+
+    .standings-cards {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .playoff-bracket-grid {
+        grid-template-columns: 1fr;
+        --matchup-height: auto;
+    }
+
+    .playoff-round {
+        grid-template-rows: auto;
+    }
+
+    .playoff-round-quarterfinals .playoff-matchup-card,
+    .playoff-round-semifinals .playoff-matchup-card,
+    .playoff-round-final .playoff-matchup-card {
+        grid-row: auto;
+        align-self: stretch;
+    }
+
+    .playoff-round-semifinals,
+    .playoff-round-final {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
     .bio-grid, .stats-grid {
         grid-template-columns: 1fr;
     }
@@ -887,5 +1357,9 @@ footer::before {
 
     .player-stats {
         grid-template-columns: 1fr;
+    }
+
+    .standings-section {
+        padding: 1rem;
     }
 }

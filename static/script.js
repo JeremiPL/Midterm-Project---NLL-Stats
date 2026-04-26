@@ -23,11 +23,21 @@ const scheduleTeamFilter = document.getElementById('scheduleTeamFilter');
 const scheduleRefreshBtn = document.getElementById('scheduleRefreshBtn');
 const scheduleTableBody = document.getElementById('scheduleTableBody');
 const scheduleLoading = document.getElementById('scheduleLoading');
+const standingSeasonFilter = document.getElementById('standingSeasonFilter');
+const standingStageFilter = document.getElementById('standingStageFilter');
+const standingsRefreshBtn = document.getElementById('standingsRefreshBtn');
+const standingsTableBody = document.getElementById('standingsTableBody');
+const standingsCards = document.getElementById('standingsCards');
+const standingsLoading = document.getElementById('standingsLoading');
+const standingsCount = document.getElementById('standingsCount');
+const playoffBracket = document.getElementById('playoffBracket');
+const playoffBracketGrid = document.getElementById('playoffBracketGrid');
 
 // State
 let allPlayers = [];
 let filteredPlayers = [];
 let scheduleLoaded = false;
+let standingsLoaded = false;
 
 // Team palettes: primary, secondary, accent and optional neutrals.
 const TEAM_COLOR_SCHEMES = {
@@ -88,6 +98,24 @@ const TEAM_LOGOS = {
 
 const DEFAULT_TEAM_LOGO = 'team-logos/default-logo.svg';
 
+const PLAYOFF_2026_QUARTERFINAL_RESULTS = {
+    'Vancouver Warriors|Halifax Thunderbirds': { highScore: 7, lowScore: 10, winner: 'low' },
+    'Colorado Mammoth|San Diego Seals': { highScore: 12, lowScore: 13, winner: 'low' },
+    'Saskatchewan Rush|Toronto Rock': { highScore: 13, lowScore: 16, winner: 'low' },
+    'Georgia Swarm|Buffalo Bandits': { highScore: 17, lowScore: 10, winner: 'high' },
+};
+
+const PLAYOFF_2026_STANDINGS_ORDER = [
+    'Georgia Swarm',
+    'Toronto Rock',
+    'San Diego Seals',
+    'Halifax Thunderbirds',
+    'Vancouver Warriors',
+    'Colorado Mammoth',
+    'Saskatchewan Rush',
+    'Buffalo Bandits',
+];
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -120,6 +148,10 @@ function attachEventListeners() {
 
     if (scheduleRefreshBtn) {
         scheduleRefreshBtn.addEventListener('click', loadSchedule);
+    }
+
+    if (standingsRefreshBtn) {
+        standingsRefreshBtn.addEventListener('click', loadStandings);
     }
 
 }
@@ -156,6 +188,463 @@ function activateTab(tabName, updateHash) {
     if (tabName === 'schedule' && !scheduleLoaded) {
         loadSchedule();
     }
+
+    if (tabName === 'league-standing' && !standingsLoaded) {
+        loadStandings();
+    }
+}
+
+async function loadStandings() {
+    if (!standingsTableBody || !standingsLoading || !standingsCards) return;
+
+    const seasonId = standingSeasonFilter ? standingSeasonFilter.value : '225';
+    const stage = standingStageFilter ? standingStageFilter.value : 'REG';
+
+    try {
+        standingsLoading.style.display = 'block';
+        renderStandingsEmpty('Loading standings...');
+
+        const params = new URLSearchParams({
+            season_id: seasonId,
+            stage,
+        });
+
+        const response = await fetch(`${API_BASE}/standings?${params.toString()}`);
+        if (!response.ok) {
+            throw new Error('Failed to load standings');
+        }
+
+        if (stage === 'PO') {
+            try {
+                const seedParams = new URLSearchParams({
+                    season_id: seasonId,
+                    stage: 'REG',
+                });
+                const seedResponse = await fetch(`${API_BASE}/standings?${seedParams.toString()}`);
+                if (!seedResponse.ok) {
+                    throw new Error('Failed to load regular season seeds');
+                }
+                const seedData = await seedResponse.json();
+                const seedRows = Array.isArray(seedData.standings) ? seedData.standings : [];
+
+                const playoffRows = buildPlayoffStandingsRows(seedRows, seasonId);
+                renderStandingsRows(playoffRows);
+                renderPlayoffBracket(seedRows.slice(0, 8), seasonId);
+            } catch (seedError) {
+                console.error('Error loading regular season seeds:', seedError);
+                const data = await response.json();
+                const rows = Array.isArray(data.standings) ? data.standings : [];
+                renderStandingsRows(rows);
+                renderPlayoffBracket(rows.slice(0, 8), seasonId);
+            }
+        } else if (playoffBracket && playoffBracketGrid) {
+            const data = await response.json();
+            const rows = Array.isArray(data.standings) ? data.standings : [];
+            renderStandingsRows(rows);
+            playoffBracket.style.display = 'none';
+            playoffBracketGrid.innerHTML = '';
+        }
+
+        standingsLoaded = true;
+    } catch (error) {
+        console.error('Error loading standings:', error);
+        renderStandingsEmpty('Unable to load standings right now.');
+    } finally {
+        standingsLoading.style.display = 'none';
+    }
+}
+
+function buildPlayoffStandingsRows(seedRows, seasonId) {
+    const rows = seedRows.map((team) => ({
+        ...team,
+        wins: 0,
+        losses: 0,
+        gamesPlayed: 0,
+        record: '0-0',
+    }));
+
+    if (seasonId !== '225') {
+        return rows;
+    }
+
+    const topEight = rows.slice(0, 8);
+    if (topEight.length < 8) {
+        return rows;
+    }
+
+    const pairings = [
+        [topEight[0], topEight[7]],
+        [topEight[1], topEight[6]],
+        [topEight[2], topEight[5]],
+        [topEight[3], topEight[4]],
+    ];
+
+    const winners = [];
+    const losers = [];
+
+    pairings.forEach((pair) => {
+        const highSeed = pair[0];
+        const lowSeed = pair[1];
+        const key = `${highSeed.team || ''}|${lowSeed.team || ''}`;
+        const result = PLAYOFF_2026_QUARTERFINAL_RESULTS[key];
+
+        if (!result) {
+            return;
+        }
+
+        const winner = result.winner === 'high' ? highSeed : lowSeed;
+        const loser = result.winner === 'high' ? lowSeed : highSeed;
+
+        winner.wins = 1;
+        winner.losses = 0;
+        winner.gamesPlayed = 1;
+        winner.record = '1-0';
+
+        loser.wins = 0;
+        loser.losses = 1;
+        loser.gamesPlayed = 1;
+        loser.record = '0-1';
+
+        winners.push(winner);
+        losers.push(loser);
+    });
+
+    const playoffRowsByTeam = {};
+    [...winners, ...losers].forEach((team) => {
+        playoffRowsByTeam[team.team] = team;
+    });
+
+    const playoffOrdered = PLAYOFF_2026_STANDINGS_ORDER
+        .map((teamName) => playoffRowsByTeam[teamName])
+        .filter(Boolean);
+
+    playoffOrdered.forEach((team, index) => {
+        team.rank = index + 1;
+    });
+
+    return playoffOrdered;
+}
+
+function renderStandingsRows(rows) {
+    if (!standingsTableBody || !standingsCards) return;
+
+    if (!rows.length) {
+        renderStandingsEmpty('No standings available for these filters.');
+        return;
+    }
+
+    if (standingsCount) {
+        standingsCount.textContent = `${rows.length} Teams`;
+    }
+
+    const tableRows = [];
+
+    rows.forEach((team, index) => {
+        const teamName = team.team || 'Unknown Team';
+        const logoPath = team.logo || getTeamLogoPath(teamName);
+
+        tableRows.push(`
+            <tr>
+                <td><span class="standings-rank-badge">${Number(team.rank || 0)}</span></td>
+                <td>
+                    <div class="standings-team-cell">
+                        <span class="standings-team-logo-wrap">
+                            <img
+                                class="standings-team-logo"
+                                src="${escapeHtml(logoPath)}"
+                                alt="${escapeHtml(teamName)} logo"
+                                loading="lazy"
+                                onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;"
+                            >
+                        </span>
+                        <span class="standings-team-name">${escapeHtml(teamName)}</span>
+                    </div>
+                </td>
+                <td><span class="standings-record">${escapeHtml(team.record || '0-0')}</span></td>
+                <td>${Number(team.gamesPlayed || 0)}</td>
+            </tr>
+        `);
+
+        if (index === 7) {
+            tableRows.push(`
+                <tr class="standings-cutoff-row">
+                    <td colspan="4">
+                        <div class="standings-cutoff-line">
+                            <span class="playoff-cutoff-tag">Playoff Cutoff</span>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        }
+    });
+
+    standingsTableBody.innerHTML = tableRows.join('');
+
+    const cardRows = [];
+
+    rows.forEach((team, index) => {
+        const teamName = team.team || 'Unknown Team';
+        const logoPath = team.logo || getTeamLogoPath(teamName);
+
+        cardRows.push(`
+            <article class="standing-card">
+                <div class="standing-card-top">
+                    <div class="standing-rank">#${Number(team.rank || 0)}</div>
+                    <img
+                        class="standing-card-logo"
+                        src="${escapeHtml(logoPath)}"
+                        alt="${escapeHtml(teamName)} logo"
+                        loading="lazy"
+                        onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;"
+                    >
+                </div>
+                <div class="standing-team-name">${escapeHtml(teamName)}</div>
+                <div class="standing-record-row">
+                    <span>Record</span>
+                    <strong>${escapeHtml(team.record || '0-0')}</strong>
+                </div>
+                <div class="standing-record-row">
+                    <span>Games Played</span>
+                    <strong>${Number(team.gamesPlayed || 0)}</strong>
+                </div>
+            </article>
+        `);
+
+        if (index === 7) {
+            cardRows.push(`
+                <div class="standings-cutoff-card-divider">
+                    <span class="playoff-cutoff-tag-card">Playoff Cutoff</span>
+                </div>
+            `);
+        }
+    });
+
+    standingsCards.innerHTML = cardRows.join('');
+}
+
+function renderStandingsEmpty(message) {
+    if (!standingsTableBody || !standingsCards) return;
+
+    if (standingsCount) {
+        standingsCount.textContent = '0 Teams';
+    }
+
+    standingsTableBody.innerHTML = `
+        <tr>
+            <td colspan="4" class="standings-empty">${escapeHtml(message)}</td>
+        </tr>
+    `;
+
+    standingsCards.innerHTML = '';
+
+    if (playoffBracket) {
+        playoffBracket.style.display = 'none';
+    }
+    if (playoffBracketGrid) {
+        playoffBracketGrid.innerHTML = '';
+    }
+}
+
+function renderPlayoffBracket(topEight, seasonId) {
+    if (!playoffBracket || !playoffBracketGrid) return;
+
+    if (topEight.length < 8) {
+        playoffBracket.style.display = 'block';
+        playoffBracketGrid.innerHTML = '<p class="standings-empty">Not enough teams to build the playoff bracket.</p>';
+        return;
+    }
+
+    const matchups = [
+        [topEight[0], topEight[7]],
+        [topEight[1], topEight[6]],
+        [topEight[2], topEight[5]],
+        [topEight[3], topEight[4]],
+    ];
+
+    const quarterfinalsData = matchups.map((pair, index) => {
+        const highSeed = pair[0];
+        const lowSeed = pair[1];
+        const resultKey = `${highSeed.team || ''}|${lowSeed.team || ''}`;
+        const configuredResult = seasonId === '225' ? PLAYOFF_2026_QUARTERFINAL_RESULTS[resultKey] : null;
+
+        let winnerTeam = null;
+        let loserTeam = null;
+
+        if (configuredResult) {
+            winnerTeam = configuredResult.winner === 'high' ? highSeed : lowSeed;
+            loserTeam = configuredResult.winner === 'high' ? lowSeed : highSeed;
+        }
+
+        return {
+            index,
+            highSeed,
+            lowSeed,
+            highScore: configuredResult ? configuredResult.highScore : null,
+            lowScore: configuredResult ? configuredResult.lowScore : null,
+            winnerTeam,
+            loserTeam,
+        };
+    });
+
+    const winnersByName = {};
+    quarterfinalsData.forEach((matchup) => {
+        if (matchup.winnerTeam?.team) {
+            winnersByName[matchup.winnerTeam.team] = matchup.winnerTeam;
+        }
+    });
+
+    const semifinalOneTeams = [
+        winnersByName['Georgia Swarm'],
+        winnersByName['Halifax Thunderbirds'],
+    ].filter(Boolean);
+
+    const semifinalTwoTeams = [
+        winnersByName['Toronto Rock'],
+        winnersByName['San Diego Seals'],
+    ].filter(Boolean);
+
+    const quarterfinals = quarterfinalsData.map((matchup) => {
+        const highSeed = matchup.highSeed;
+        const lowSeed = matchup.lowSeed;
+
+        const highName = highSeed.team || 'TBD';
+        const lowName = lowSeed.team || 'TBD';
+        const highLogo = highSeed.logo || getTeamLogoPath(highName);
+        const lowLogo = lowSeed.logo || getTeamLogoPath(lowName);
+
+        return `
+            <article class="playoff-matchup-card">
+                <h4>Quarterfinal ${matchup.index + 1}</h4>
+                <div class="playoff-series-format">Single Game</div>
+                <div class="playoff-seed-row">
+                    <span class="playoff-seed-number">#${Number(highSeed.rank || 0)}</span>
+                    <img class="playoff-seed-logo" src="${escapeHtml(highLogo)}" alt="${escapeHtml(highName)} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+                    <span class="playoff-seed-name">${escapeHtml(highName)}</span>
+                    <span class="playoff-seed-record">${matchup.highScore !== null ? Number(matchup.highScore) : escapeHtml(highSeed.record || '0-0')}</span>
+                </div>
+                <div class="playoff-vs">vs</div>
+                <div class="playoff-seed-row">
+                    <span class="playoff-seed-number">#${Number(lowSeed.rank || 0)}</span>
+                    <img class="playoff-seed-logo" src="${escapeHtml(lowLogo)}" alt="${escapeHtml(lowName)} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+                    <span class="playoff-seed-name">${escapeHtml(lowName)}</span>
+                    <span class="playoff-seed-record">${matchup.lowScore !== null ? Number(matchup.lowScore) : escapeHtml(lowSeed.record || '0-0')}</span>
+                </div>
+            </article>
+        `;
+    }).join('');
+
+    const semifinalOne = semifinalOneTeams.length === 2
+        ? `
+            <article class="playoff-matchup-card playoff-matchup-placeholder">
+                <h4>Semifinal 1</h4>
+                <div class="playoff-series-format">Best of 3</div>
+                <div class="playoff-seed-row">
+                    <span class="playoff-seed-number">#${Number(semifinalOneTeams[0].rank || 0)}</span>
+                    <img class="playoff-seed-logo" src="${escapeHtml(semifinalOneTeams[0].logo || getTeamLogoPath(semifinalOneTeams[0].team || ''))}" alt="${escapeHtml(semifinalOneTeams[0].team || 'TBD')} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+                    <span class="playoff-seed-name">${escapeHtml(semifinalOneTeams[0].team || 'TBD')} <span class="playoff-home-tag">Home</span></span>
+                    <span class="playoff-seed-record">${escapeHtml(semifinalOneTeams[0].record || '0-0')}</span>
+                </div>
+                <div class="playoff-vs">vs</div>
+                <div class="playoff-seed-row">
+                    <span class="playoff-seed-number">#${Number(semifinalOneTeams[1].rank || 0)}</span>
+                    <img class="playoff-seed-logo" src="${escapeHtml(semifinalOneTeams[1].logo || getTeamLogoPath(semifinalOneTeams[1].team || ''))}" alt="${escapeHtml(semifinalOneTeams[1].team || 'TBD')} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+                    <span class="playoff-seed-name">${escapeHtml(semifinalOneTeams[1].team || 'TBD')}</span>
+                    <span class="playoff-seed-record">${escapeHtml(semifinalOneTeams[1].record || '0-0')}</span>
+                </div>
+            </article>
+        `
+        : `
+            <article class="playoff-matchup-card playoff-matchup-placeholder">
+                <h4>Semifinal 1</h4>
+                <div class="playoff-series-format">Best of 3</div>
+                <div class="playoff-seed-row playoff-seed-row-placeholder">
+                    <span class="playoff-seed-number">W1</span>
+                    <img class="playoff-seed-logo" src="${DEFAULT_TEAM_LOGO}" alt="Winner QF1 logo" loading="lazy">
+                    <span class="playoff-seed-name">Winner Quarterfinal 1</span>
+                    <span class="playoff-seed-record">TBD</span>
+                </div>
+                <div class="playoff-vs">vs</div>
+                <div class="playoff-seed-row playoff-seed-row-placeholder">
+                    <span class="playoff-seed-number">W2</span>
+                    <img class="playoff-seed-logo" src="${DEFAULT_TEAM_LOGO}" alt="Winner QF2 logo" loading="lazy">
+                    <span class="playoff-seed-name">Winner Quarterfinal 2</span>
+                    <span class="playoff-seed-record">TBD</span>
+                </div>
+            </article>
+        `;
+
+    const semifinalTwo = semifinalTwoTeams.length === 2
+        ? `
+            <article class="playoff-matchup-card playoff-matchup-placeholder">
+                <h4>Semifinal 2</h4>
+                <div class="playoff-series-format">Best of 3</div>
+                <div class="playoff-seed-row">
+                    <span class="playoff-seed-number">#${Number(semifinalTwoTeams[0].rank || 0)}</span>
+                    <img class="playoff-seed-logo" src="${escapeHtml(semifinalTwoTeams[0].logo || getTeamLogoPath(semifinalTwoTeams[0].team || ''))}" alt="${escapeHtml(semifinalTwoTeams[0].team || 'TBD')} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+                    <span class="playoff-seed-name">${escapeHtml(semifinalTwoTeams[0].team || 'TBD')} <span class="playoff-home-tag">Home</span></span>
+                    <span class="playoff-seed-record">${escapeHtml(semifinalTwoTeams[0].record || '0-0')}</span>
+                </div>
+                <div class="playoff-vs">vs</div>
+                <div class="playoff-seed-row">
+                    <span class="playoff-seed-number">#${Number(semifinalTwoTeams[1].rank || 0)}</span>
+                    <img class="playoff-seed-logo" src="${escapeHtml(semifinalTwoTeams[1].logo || getTeamLogoPath(semifinalTwoTeams[1].team || ''))}" alt="${escapeHtml(semifinalTwoTeams[1].team || 'TBD')} logo" loading="lazy" onerror="this.src='${DEFAULT_TEAM_LOGO}'; this.onerror=null;">
+                    <span class="playoff-seed-name">${escapeHtml(semifinalTwoTeams[1].team || 'TBD')}</span>
+                    <span class="playoff-seed-record">${escapeHtml(semifinalTwoTeams[1].record || '0-0')}</span>
+                </div>
+            </article>
+        `
+        : `
+            <article class="playoff-matchup-card playoff-matchup-placeholder">
+                <h4>Semifinal 2</h4>
+                <div class="playoff-series-format">Best of 3</div>
+                <div class="playoff-seed-row playoff-seed-row-placeholder">
+                    <span class="playoff-seed-number">W3</span>
+                    <img class="playoff-seed-logo" src="${DEFAULT_TEAM_LOGO}" alt="Winner QF3 logo" loading="lazy">
+                    <span class="playoff-seed-name">Winner Quarterfinal 3</span>
+                    <span class="playoff-seed-record">TBD</span>
+                </div>
+                <div class="playoff-vs">vs</div>
+                <div class="playoff-seed-row playoff-seed-row-placeholder">
+                    <span class="playoff-seed-number">W4</span>
+                    <img class="playoff-seed-logo" src="${DEFAULT_TEAM_LOGO}" alt="Winner QF4 logo" loading="lazy">
+                    <span class="playoff-seed-name">Winner Quarterfinal 4</span>
+                    <span class="playoff-seed-record">TBD</span>
+                </div>
+            </article>
+        `;
+
+    playoffBracket.style.display = 'block';
+    playoffBracketGrid.innerHTML = `
+        <div class="playoff-round playoff-round-quarterfinals">
+            <div class="playoff-round-label">Quarterfinals</div>
+            ${quarterfinals}
+        </div>
+        <div class="playoff-round playoff-round-semifinals">
+            <div class="playoff-round-label">Semifinals</div>
+            ${semifinalOne}
+            ${semifinalTwo}
+        </div>
+        <div class="playoff-round playoff-round-final">
+            <div class="playoff-round-label">Championship</div>
+            <article class="playoff-matchup-card playoff-matchup-final">
+                <h4>NLL Final</h4>
+                <div class="playoff-series-format">Best of 3</div>
+                <div class="playoff-seed-row playoff-seed-row-placeholder">
+                    <span class="playoff-seed-number">W</span>
+                    <img class="playoff-seed-logo" src="${DEFAULT_TEAM_LOGO}" alt="Finalist 1 logo" loading="lazy">
+                    <span class="playoff-seed-name">Winner Semifinal 1</span>
+                    <span class="playoff-seed-record">TBD</span>
+                </div>
+                <div class="playoff-vs">vs</div>
+                <div class="playoff-seed-row playoff-seed-row-placeholder">
+                    <span class="playoff-seed-number">W</span>
+                    <img class="playoff-seed-logo" src="${DEFAULT_TEAM_LOGO}" alt="Finalist 2 logo" loading="lazy">
+                    <span class="playoff-seed-name">Winner Semifinal 2</span>
+                    <span class="playoff-seed-record">TBD</span>
+                </div>
+            </article>
+        </div>
+    `;
 }
 
 async function loadSchedule() {
@@ -798,6 +1287,7 @@ function isLightColor(hex) {
 
 // Helper: Escape HTML
 function escapeHtml(text) {
+    const safeText = String(text ?? '');
     const map = {
         '&': '&amp;',
         '<': '&lt;',
@@ -805,5 +1295,5 @@ function escapeHtml(text) {
         '"': '&quot;',
         "'": '&#039;'
     };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    return safeText.replace(/[&<>"']/g, m => map[m]);
 }
