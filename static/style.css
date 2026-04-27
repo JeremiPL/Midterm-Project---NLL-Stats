@@ -697,6 +697,45 @@ main {
     margin: 0.35rem 0;
 }
 
+.playoff-series-winner {
+    background: rgba(245, 133, 33, 0.08);
+    border-radius: 8px;
+    padding: 0.15rem 0.3rem;
+    margin: -0.15rem -0.3rem;
+}
+
+.playoff-champion-tag {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #7a4a00;
+    background: #ffe8a0;
+    border: 1px solid #e6c040;
+    border-radius: 999px;
+    padding: 0.04rem 0.35rem;
+    vertical-align: middle;
+}
+
+.playoff-games-detail {
+    margin-top: 0.6rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e7dfcf;
+}
+
+.playoff-game-line {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-bottom: 0.18rem;
+}
+
+.playoff-game-note {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+
 /* Search Section */
 .search-section {
     background:

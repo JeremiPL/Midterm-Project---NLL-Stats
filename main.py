@@ -1,7 +1,9 @@
+import json
+import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, create_engine, select
-from models import PlayerProfile, PlayerStats, ScheduleGame, engine
+from models import PlayerProfile, PlayerStats, ScheduleGame, TeamStanding, engine
 
 
 TEAM_LOGOS = {
@@ -39,6 +41,23 @@ SEASON_225_REG_ORDER = [
     "Rochester Knighthawks",
     "Oshawa FireWolves",
     "Philadelphia Wings",
+]
+
+SEASON_224_REG_ORDER = [
+    "Buffalo Bandits",
+    "Saskatchewan Rush",
+    "Halifax Thunderbirds",
+    "Vancouver Warriors",
+    "Rochester Knighthawks",
+    "Calgary Roughnecks",
+    "Georgia Swarm",
+    "San Diego Seals",
+    "Ottawa Black Bears",
+    "Colorado Mammoth",
+    "Albany FireWolves",
+    "Philadelphia Wings",
+    "Toronto Rock",
+    "Las Vegas Desert Dogs",
 ]
 
 app = FastAPI(title="NLL Box Lacrosse Stats")
@@ -195,6 +214,18 @@ def get_standings(
     season_id: str = "225",
     stage: str = "REG",
 ):
+    # Return pre-computed historical standings from DB if no schedule games exist
+    historical_rows = None
+    with Session(engine) as session:
+        db_standings = session.exec(
+            select(TeamStanding).where(
+                TeamStanding.season_id == season_id,
+                TeamStanding.stage == stage,
+            ).order_by(TeamStanding.rank)
+        ).all()
+        if db_standings:
+            historical_rows = db_standings
+
     with Session(engine) as session:
         games = session.exec(
             select(ScheduleGame).where(
@@ -203,8 +234,38 @@ def get_standings(
             )
         ).all()
 
-    standings = {}
+    # Fall back to DB historical standings when no schedule games exist
+    if not games and historical_rows:
+        rows = []
+        for entry in historical_rows:
+            logo = TEAM_LOGOS.get(entry.team.lower())
+            rows.append({
+                "rank": entry.rank,
+                "team": entry.team,
+                "logo": f"team-logos/{logo}" if logo else DEFAULT_TEAM_LOGO,
+                "wins": entry.wins,
+                "losses": entry.losses,
+                "gamesPlayed": entry.games_played,
+                "goalsFor": entry.goals_for,
+                "goalsAgainst": entry.goals_against,
+                "goalDiff": entry.goal_diff,
+                "homeRecord": entry.home_record,
+                "roadRecord": entry.road_record,
+                "last5": entry.last5,
+                "streak": entry.streak,
+                "clinched": entry.clinched,
+                "record": f"{entry.wins}-{entry.losses}",
+            })
+        return {
+            "seasonId": season_id,
+            "stage": stage,
+            "standings": rows,
+            "source": "historical",
+        }
 
+
+
+    standings = {}
     for game in games:
         away_team = game.away_team
         home_team = game.home_team
@@ -264,6 +325,9 @@ def get_standings(
     if season_id == "225" and stage == "REG":
         order_map = {team_name: index for index, team_name in enumerate(SEASON_225_REG_ORDER)}
         rows.sort(key=lambda row: order_map.get(row["team"], len(SEASON_225_REG_ORDER)))
+    elif season_id == "224" and stage == "REG":
+        order_map = {team_name: index for index, team_name in enumerate(SEASON_224_REG_ORDER)}
+        rows.sort(key=lambda row: order_map.get(row["team"], len(SEASON_224_REG_ORDER)))
     else:
         rows.sort(
             key=lambda row: (

@@ -53,6 +53,28 @@ class PlayerStats(SQLModel, table=True):
     save_percentage: Optional[float] = None
 
 
+class TeamStanding(SQLModel, table=True):
+    __tablename__ = "team_standing"
+
+    standing_id: Optional[int] = Field(default=None, primary_key=True)
+    season_id: str = Field(index=True)       # e.g. "225"
+    season_label: str = Field(index=True)    # e.g. "2024-25"
+    stage: str = Field(index=True)           # REG or PO
+    rank: int
+    team: str = Field(index=True)
+    wins: int
+    losses: int
+    games_played: int
+    goals_for: Optional[int] = None
+    goals_against: Optional[int] = None
+    goal_diff: Optional[int] = None
+    home_record: Optional[str] = None
+    road_record: Optional[str] = None
+    last5: Optional[str] = None
+    streak: Optional[str] = None
+    clinched: Optional[str] = None
+
+
 class ScheduleGame(SQLModel, table=True):
     __tablename__ = "schedule_game"
 
