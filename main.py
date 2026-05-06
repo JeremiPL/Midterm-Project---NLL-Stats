@@ -214,7 +214,6 @@ def get_standings(
     season_id: str = "225",
     stage: str = "REG",
 ):
-    # Return pre-computed historical standings from DB if no schedule games exist
     historical_rows = None
     with Session(engine) as session:
         db_standings = session.exec(
@@ -234,7 +233,6 @@ def get_standings(
             )
         ).all()
 
-    # Fall back to DB historical standings when no schedule games exist
     if not games and historical_rows:
         rows = []
         for entry in historical_rows:
